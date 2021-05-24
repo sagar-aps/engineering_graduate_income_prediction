@@ -1,0 +1,79 @@
+---
+title: "Engineering Graduate Income Prediction"
+author: "Sagar Apshankar"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Intoduction
+
+## Abstract
+India produces ~1.5 M engineering graduates per year. This humongous number is due to the fact that Indians seee professions such as medicine, engineering and law as secure incomes for their children. However, there is significant variation in the incomes of graduates of a discipline. Students from populous modern cities are perceived to have an edge over others from the hinterland. The variability in competence between graduates has given rise to a new industry of job placement. Agencies test fresh graduates on their skills and help them get into jobs. The dataset we are going to analyze comes from one such training and placement agency called AMCAT.
+
+
+
+## Executive Summary
+
+This is an R Markdown format used for publishing markdown documents to GitHub. When you click the **Knit** button all R code chunks are run and a markdown file (.md) suitable for publishing to GitHub is generated.
+
+# Dataset
+
+The dataset contains 34 columns. The descriptions for these columns, as found on https://www.kaggle.com/manishkc06/engineering-graduate-salary-prediction are as follows:
+
++ ID: A unique ID to identify a candidate
++ Salary: Annual CTC offered to the candidate (in INR)
++ Gender: Candidate's gender
++ DOB: Date of birth of the candidate
++ 10percentage: Overall marks obtained in grade 10 examinations
++ 10board: The school board whose curriculum the candidate followed in grade 10
++ 12graduation: Year of graduation - senior year high school
++ 12percentage: Overall marks obtained in grade 12 examinations
++ 12board: The school board whose curriculum the candidate followed
++ CollegeID: Unique ID identifying the university/college which the candidate attended for her/his undergraduate
++ CollegeTier: Each college has been annotated as 1 or 2. The annotations have been computed from the average AMCAT scores obtained by + the students in the college/university. Colleges with an average score above a threshold are tagged as 1 and others as 2.
++ Degree: Degree obtained/pursued by the candidate
++ Specialization: Specialization pursued by the candidate
++ CollegeGPA: Aggregate GPA at graduation
++ CollegeCityID: A unique ID to identify the city in which the college is located in.
++ CollegeCityTier: The tier of the city in which the college is located in. This is annotated based on the population of the cities.
++ CollegeState: Name of the state in which the college is located
++ GraduationYear: Year of graduation (Bachelor's degree)
++ English: Scores in AMCAT English section
++ Logical: Score in AMCAT Logical ability section
++ Quant: Score in AMCAT's Quantitative ability section
++ Domain: Scores in AMCAT's domain module
++ ComputerProgramming: Score in AMCAT's Computer programming section
++ ElectronicsAndSemicon: Score in AMCAT's Electronics & Semiconductor Engineering section
++ ComputerScience: Score in AMCAT's Computer Science section
++ MechanicalEngg: Score in AMCAT's Mechanical Engineering section
++ ElectricalEngg: Score in AMCAT's Electrical Engineering section
++ TelecomEngg: Score in AMCAT's Telecommunication Engineering section
++ CivilEngg: Score in AMCAT's Civil Engineering section
++ conscientiousness: Scores in one of the sections of AMCAT's personality test
++ agreeableness: Scores in one of the sections of AMCAT's personality test
++ extraversion: Scores in one of the sections of AMCAT's personality test
++ nueroticism: Scores in one of the sections of AMCAT's personality test
++ openesstoexperience: Scores in one of the sections of AMCAT's personality test
+
+Lets check the contents of each column.
+
+A cursory look through the data tells us that X10 board, X12board and specialization are free text fields and may require cleaning.
+
+Indian students have many significant exams in their life, the first being 10th standard (grade) which is generally taken at 16 years old. The next exam is the 12th board which is taken at 18 years old and is accompanied by entrance examinations into professional courses. Each indian state has their own "State Education board" which sets curricula and conducts the examinations. There are also two other significant national boards of education, namely, the CBSE (Central Board of Secondary Education) and the ICSE(Indian Certificate of Secondary Education) to which schools can be associated. These two national boards generally have  
+
+```{r glimpse}
+glimpse(data)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
