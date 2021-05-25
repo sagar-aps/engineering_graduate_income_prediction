@@ -62,11 +62,13 @@ Lets check the contents of each column.
 
 A cursory look through the data tells us that X10 board, X12board and specialization are free text fields and may require cleaning.
 
-Indian students have many significant exams in their life, the first being 10th standard (grade) which is generally taken at 16 years old. The next exam is the 12th board which is taken at 18 years old and is accompanied by entrance examinations into professional courses. Each indian state has their own "State Education board" which sets curricula and conducts the examinations. There are also two other significant national boards of education, namely, the CBSE (Central Board of Secondary Education) and the ICSE(Indian Certificate of Secondary Education) to which schools can be associated. These two national boards generally have  
+Indian students have many significant exams in their life, the first being 10th standard (grade) which is generally taken at 16 years old. The next exam is the 12th board which is taken at 18 years old and is accompanied by entrance examinations into professional courses. Each Indian state has their own "State Education board" which sets curricula and conducts the examinations. There are also two other significant national boards of education, namely, the CBSE (Central Board of Secondary Education) and the ICSE(Indian Certificate of Secondary Education) to which schools can be associated. Fewer schools are associated with ICSE and CBSE than the state boards. 
 
 ```{r glimpse}
 glimpse(data)
 ```
+
+
 
 ## Including Plots
 
