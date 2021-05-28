@@ -43,12 +43,12 @@ data %>% select(time_to_grad,time_to_X12) %>%
   xlim(13,29)
 
 
-dat <- data.frame(xx = c(runif(100,20,50),runif(100,40,80),runif(100,0,30)),yy = rep(letters[1:3],each = 100))
-rm(dat)
+# dat <- data.frame(xx = c(runif(100,20,50),runif(100,40,80),runif(100,0,30)),yy = rep(letters[1:3],each = 100))
+# rm(dat)
 #Boards
 
 
-data %>% group_by(X10board) %>%
+data %>% group_by(X10board,X12board) %>%
   summarise(n=n()) %>%
   arrange(desc(n)) %>%
   mutate(perc = n/sum(n)*100) %>%
@@ -100,6 +100,9 @@ noncbseicse0 <- paste(c("cbse","icse","0"))
   X10board= replace_by(X10board, noncbseicse0, X10board ,"state board"), #replace non cbse & icse
   X12board= replace_by(X12board,noncbseicse0, X12board, "state board"), #and non 0 by state board
   
+  X10board= replace_by(X10board, "0",NA), # Convert 0 values to NA
+  X12board= replace_by(X12board, "0",NA),
+  
    X10board = as.factor(X10board), #reconvert to factor
    X12board = as.factor(X12board)) %>%
    group_by(X10board,X12board) %>%
@@ -111,6 +114,18 @@ temp<-data %>%
   group_by(Specialization) %>%
   summarise(n=n()) %>%
   arrange(n) 
+
+
+data %>%
+  group_by(Specialization) %>%
+  summarise(n=n()) %>%
+  arrange(n) %>%
+  filter(n<150) %>%
+  pull(n) %>%
+  sum()
+
+
+
 #%>%
 #  ggplot(aes(n))+
  # geom_histogram(bins = 10)
@@ -135,38 +150,84 @@ electrical <- c("electrical and power engineering","electrical engineering","ele
 IT <- c("information & communication technology", "information science",	
                             "information science engineering", "computer application",
                             "information technology")
-other <- c("ceramic engineering","biomedical engineering" ,"metallurgical engineering","aeronautical engineering","chemical engineering","other","biotechnology","electronics and electrical engineering")
+biotech <- c("biomedical engineering" ,"biotechnology")
+other <- c("ceramic engineering","metallurgical engineering","aeronautical engineering","chemical engineering","other","electronics and electrical engineering")
 
 
+#check mutation spec
 
-
-
-
-
-
-
-
-data<-data %>% mutate(
+ data %>% mutate(
+  
+  Specialization = as.character(Specialization),
   spec_orig = Specialization,
+  
   Specialization = replace_by(Specialization,mechanical),
   Specialization = replace_by(Specialization,computer),
   Specialization = replace_by(Specialization,eintc),
   Specialization = replace_by(Specialization,electrical),
   Specialization = replace_by(Specialization,IT),
-  Specialization = replace_by(Specialization,other))
+  Specialization = replace_by(Specialization,biotech),
+  Specialization = replace_by(Specialization,other),
+  Specialization = as.factor(Specialization)) %>%
+  group_by(Specialization, spec_orig) %>%
+  summarise(n=n()) %>%
+  arrange(Specialization) 
 
 
+spec %>% ggplot(aes(Specialization)) +
+  stat_count()
 
+
+#final mutate Specialization
+
+data<-data %>% mutate(
+  
+  Specialization = as.character(Specialization), #convert to char for string functions
+  spec_orig = Specialization,   #backup of original
+  
+  
+  Specialization = replace_by(Specialization,mechanical),
+  Specialization = replace_by(Specialization,computer),
+  Specialization = replace_by(Specialization,eintc),
+  Specialization = replace_by(Specialization,electrical),
+  Specialization = replace_by(Specialization,IT),
+  Specialization = replace_by(Specialization,other),
+  
+  Specialization = as.factor(Specialization) #reconvert to factor
+  )
+
+
+#final mutate Moards
 
 data <- data %>% mutate(
-  X10board_orig= X10board,
+  X10board_orig= X10board, #Save original variables
   X12board_orig = X12board,
-  X10board=ifelse(str_detect(X10board,paste(cbse_alt_names,collapse = "|")),"cbse",X10board),
-  X10board=ifelse(str_detect(X10board,paste(icse_alt_names,collapse = "|")),"icse",X10board),
-  X12board=ifelse(str_detect(X12board,paste(cbse_alt_names,collapse = "|")),"cbse",X12board),
-  X12board=ifelse(str_detect(X12board,paste(icse_alt_names,collapse = "|")),"icse",X12board),
-  X10board=ifelse(str_detect(X10board,paste(c("cbse","icse","0"),collapse = "|")),X10board,"state board"),
-  X12board=ifelse(str_detect(X12board,paste(c("cbse","icse","0"),collapse = "|")),X12board,"state board"))
+  
+  X10board = as.character(X10board), #convert to char to facilitate string functions
+  X12board = as.character(X12board),
+  
+  X10board= replace_by(X10board,cbse_alt_names,"cbse"), #replace cbse and icse synonyms
+  X10board= replace_by(X10board,icse_alt_names,"icse"),
+  X12board= replace_by(X12board,cbse_alt_names,"cbse"),
+  X12board= replace_by(X12board,icse_alt_names,"icse"),
+  
+  X10board= replace_by(X10board, noncbseicse0, X10board ,"state board"), #replace non cbse & icse
+  X12board= replace_by(X12board,noncbseicse0, X12board, "state board"), #and non 0 by state board
+  
+  X10board= replace_by(X10board, "0",NA), # Convert 0 values to NA
+  X12board= replace_by(X12board, "0",NA),
+  
+  X10board = as.factor(X10board), #reconvert to factor
+  X12board = as.factor(X12board))
+  
+
+  
+  # X10board=ifelse(str_detect(X10board,paste(cbse_alt_names,collapse = "|")),"cbse",X10board),
+  # X10board=ifelse(str_detect(X10board,paste(icse_alt_names,collapse = "|")),"icse",X10board),
+  # X12board=ifelse(str_detect(X12board,paste(cbse_alt_names,collapse = "|")),"cbse",X12board),
+  # X12board=ifelse(str_detect(X12board,paste(icse_alt_names,collapse = "|")),"icse",X12board),
+  # X10board=ifelse(str_detect(X10board,paste(c("cbse","icse","0"),collapse = "|")),X10board,"state board"),
+  # X12board=ifelse(str_detect(X12board,paste(c("cbse","icse","0"),collapse = "|")),X12board,"state board"))
 
 
 
@@ -190,6 +251,23 @@ data %>% group_by(CollegeID) %>%
 #X12 perc as double
 #CollegeID as fact
 #collegetier as fact
+
+
+
+#count.na by column
+
+
+sapply(data, function(x) sum(is.na(x))) %>%
+  as.data.frame() %>%
+  filter(.>0)
+
+#reorder columns
+
+data %>% 
+  # dplyr::relocate(disp) %>% ## simply make disp the first column
+  relocate(starts_with("time"), .after = CollegeState)  
+
+
 
 
 install.packages(c("FactoMineR", "factoextra"))

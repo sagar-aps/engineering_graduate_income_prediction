@@ -11,64 +11,270 @@ knitr::opts_chunk$set(echo = TRUE)
 # Intoduction
 
 ## Abstract
-India produces ~1.5 M engineering graduates per year. This humongous number is due to the fact that Indians seee professions such as medicine, engineering and law as secure incomes for their children. However, there is significant variation in the incomes of graduates of a discipline. Students from populous modern cities are perceived to have an edge over others from the hinterland. The variability in competence between graduates has given rise to a new industry of job placement. Agencies test fresh graduates on their skills and help them get into jobs. The dataset we are going to analyze comes from one such training and placement agency called AMCAT.
 
-
+India produces \~1.5 M engineering graduates per year. This humongous number is due to the fact that Indians see professions such as medicine, engineering and law as secure futures for their children and bank on their degrees as a way into the middle class. However, there is significant variation in the incomes of graduates of a discipline. Students from populous modern cities are perceived to have an edge over others from the hinterland. The variability in competence between graduates combined with disparity in opportunities available has given rise to a new industry of job placement. Agencies test fresh graduates on their skills and help them get into jobs. The dataset we are going to analyze comes from one such training and placement agency called AMCAT.
 
 ## Executive Summary
 
-This is an R Markdown format used for publishing markdown documents to GitHub. When you click the **Knit** button all R code chunks are run and a markdown file (.md) suitable for publishing to GitHub is generated.
+The dataset contains 34 columns. The descriptions for these columns, as found on <https://www.kaggle.com/manishkc06/engineering-graduate-salary-prediction> are as follows:
 
-# Dataset
-
-The dataset contains 34 columns. The descriptions for these columns, as found on https://www.kaggle.com/manishkc06/engineering-graduate-salary-prediction are as follows:
-
-+ ID: A unique ID to identify a candidate
-+ Salary: Annual CTC offered to the candidate (in INR)
-+ Gender: Candidate's gender
-+ DOB: Date of birth of the candidate
-+ 10percentage: Overall marks obtained in grade 10 examinations
-+ 10board: The school board whose curriculum the candidate followed in grade 10
-+ 12graduation: Year of graduation - senior year high school
-+ 12percentage: Overall marks obtained in grade 12 examinations
-+ 12board: The school board whose curriculum the candidate followed
-+ CollegeID: Unique ID identifying the university/college which the candidate attended for her/his undergraduate
-+ CollegeTier: Each college has been annotated as 1 or 2. The annotations have been computed from the average AMCAT scores obtained by + the students in the college/university. Colleges with an average score above a threshold are tagged as 1 and others as 2.
-+ Degree: Degree obtained/pursued by the candidate
-+ Specialization: Specialization pursued by the candidate
-+ CollegeGPA: Aggregate GPA at graduation
-+ CollegeCityID: A unique ID to identify the city in which the college is located in.
-+ CollegeCityTier: The tier of the city in which the college is located in. This is annotated based on the population of the cities.
-+ CollegeState: Name of the state in which the college is located
-+ GraduationYear: Year of graduation (Bachelor's degree)
-+ English: Scores in AMCAT English section
-+ Logical: Score in AMCAT Logical ability section
-+ Quant: Score in AMCAT's Quantitative ability section
-+ Domain: Scores in AMCAT's domain module
-+ ComputerProgramming: Score in AMCAT's Computer programming section
-+ ElectronicsAndSemicon: Score in AMCAT's Electronics & Semiconductor Engineering section
-+ ComputerScience: Score in AMCAT's Computer Science section
-+ MechanicalEngg: Score in AMCAT's Mechanical Engineering section
-+ ElectricalEngg: Score in AMCAT's Electrical Engineering section
-+ TelecomEngg: Score in AMCAT's Telecommunication Engineering section
-+ CivilEngg: Score in AMCAT's Civil Engineering section
-+ conscientiousness: Scores in one of the sections of AMCAT's personality test
-+ agreeableness: Scores in one of the sections of AMCAT's personality test
-+ extraversion: Scores in one of the sections of AMCAT's personality test
-+ nueroticism: Scores in one of the sections of AMCAT's personality test
-+ openesstoexperience: Scores in one of the sections of AMCAT's personality test
+-   ID: A unique ID to identify a candidate
+-   Salary: Annual CTC offered to the candidate (in INR)
+-   Gender: Candidate's gender
+-   DOB: Date of birth of the candidate
+-   10percentage: Overall marks obtained in grade 10 examinations
+-   10board: The school board whose curriculum the candidate followed in grade 10
+-   12graduation: Year of graduation - senior year high school
+-   12percentage: Overall marks obtained in grade 12 examinations
+-   12board: The school board whose curriculum the candidate followed
+-   CollegeID: Unique ID identifying the university/college which the candidate attended for her/his undergraduate
+-   CollegeTier: Each college has been annotated as 1 or 2. The annotations have been computed from the average AMCAT scores obtained by the students in the college/university. Colleges with an average score above a threshold are tagged as 1 and others as 2.
+-   Degree: Degree obtained/pursued by the candidate
+-   Specialization: Specialization pursued by the candidate
+-   CollegeGPA: Aggregate GPA at graduation
+-   CollegeCityID: A unique ID to identify the city in which the college is located in.
+-   CollegeCityTier: The tier of the city in which the college is located in. This is annotated based on the population of the cities.
+-   CollegeState: Name of the state in which the college is located
+-   GraduationYear: Year of graduation (Bachelor's degree)
+-   English: Scores in AMCAT English section
+-   Logical: Score in AMCAT Logical ability section
+-   Quant: Score in AMCAT's Quantitative ability section
+-   Domain: Scores in AMCAT's domain module
+-   ComputerProgramming: Score in AMCAT's Computer programming section
+-   ElectronicsAndSemicon: Score in AMCAT's Electronics & Semiconductor Engineering section
+-   ComputerScience: Score in AMCAT's Computer Science section
+-   MechanicalEngg: Score in AMCAT's Mechanical Engineering section
+-   ElectricalEngg: Score in AMCAT's Electrical Engineering section
+-   TelecomEngg: Score in AMCAT's Telecommunication Engineering section
+-   CivilEngg: Score in AMCAT's Civil Engineering section
+-   conscientiousness: Scores in one of the sections of AMCAT's personality test
+-   agreeableness: Scores in one of the sections of AMCAT's personality test
+-   extraversion: Scores in one of the sections of AMCAT's personality test
+-   nueroticism: Scores in one of the sections of AMCAT's personality test
+-   openesstoexperience: Scores in one of the sections of AMCAT's personality test
 
 Lets check the contents of each column.
 
-A cursory look through the data tells us that X10 board, X12board and specialization are free text fields and may require cleaning.
+The ID columns including college IDs and College City IDs are likely to be interpreted as 'numeric' values by the read csv function. We should however treat them as factors as the number itself only acts as an identifier and no information is encoded in its magnitude. The following script will load the data from the csv taking into account the correct variable types.
 
-Indian students have many significant exams in their life, the first being 10th standard (grade) which is generally taken at 16 years old. The next exam is the 12th board which is taken at 18 years old and is accompanied by entrance examinations into professional courses. Each Indian state has their own "State Education board" which sets curricula and conducts the examinations. There are also two other significant national boards of education, namely, the CBSE (Central Board of Secondary Education) and the ICSE(Indian Certificate of Secondary Education) to which schools can be associated. Fewer schools are associated with ICSE and CBSE than the state boards. 
+```{r load_data}
 
-```{r glimpse}
-glimpse(data)
+data<-read.csv2("./Engineering_graduate_salary.csv",
+                  sep = ",",dec = ".",colClasses = c(
+                                                    ID="factor",
+                                                    DOB= "Date",
+                                                    CollegeID="factor",
+                                                    CollegeCityID="factor",
+                                                    CollegeCityTier="factor")
+                ,stringsAsFactors = TRUE)
+
+data%>% glimpse()
+
 ```
 
+We will need to swswitch back to string datatype for cleaning operations but this is easily done with the "as" family of functions inside "mutate".
 
+## Data Pre-processing
+
+A cursory look through the data tells us that X10 board, X12board and Specialization have many unique values and will require a lot of cleaning.
+
+```{r why_clean_board}
+
+
+data %>% group_by(X10board,X12board) %>%
+  summarise(n=n()) %>%
+  arrange(desc(n)) %>%
+  mutate(perc = n/sum(n)*100) %>%
+  filter(X10board != "cbse" & X10board != "icse")
+
+```
+
+Cleaning these fields necessitates some background knowledge of the education system in India. The rationale is given in the following paragraph.
+
+Indian students have many significant exams in their life, the first being 10th standard exam (grade) which is generally taken at 16 years old. The next exam is the 12th standard exam which is taken at 18 years old and is accompanied by entrance examinations into professional courses. Each Indian state has their own "State Education board"; a body which sets curricula and conducts the examinations. There are also two other significant national boards of education, namely, the CBSE (Central Board of Secondary Education) and the ICSE(Indian Certificate of Secondary Education) to which schools can be associated. Fewer schools are associated with ICSE and CBSE than the state boards. Since we don't have many examples from each state board and sometimes we don't have information about the state at all, we shall be grouping all State Boards into one category.
+
+First, we will identify all typing mistakes, alternate names and research school names to fin the correct board by row and add them to a variable storing alternate names. Next,we can replace the names and group to see the result. We will replace all the 0s with NA.
+
+```{r cleaning boards}
+
+
+cbse_alt_names <- c("central","cbse","delhi public school", "jawahar navodaya vidyalaya ","all india board " ,"cbsc","aissce","aisse")
+icse_alt_names <- c("certificate", "icse", "cisce", "isc", "anglo")
+
+data %>% mutate(
+  X10board = as.character(X10board),
+  X12board = as.character(X12board), #necessary for string functions
+  X10board=ifelse(str_detect(X10board,paste(cbse_alt_names,collapse = "|")),"cbse",X10board),
+  X10board=ifelse(str_detect(X10board,paste(icse_alt_names,collapse = "|")),"icse",X10board),
+  X12board=ifelse(str_detect(X12board,paste(cbse_alt_names,collapse = "|")),"cbse",X12board),
+  X12board=ifelse(str_detect(X12board,paste(icse_alt_names,collapse = "|")),"icse",X12board),
+  X10board=ifelse(str_detect(X10board,paste(c("cbse","icse","0"),collapse = "|")),X10board,"state board"),
+  X12board=ifelse(str_detect(X12board,paste(c("cbse","icse","0"),collapse = "|")),X12board,"state board"),
+  X10board=ifelse(str_detect(X10board,"0"),NA,X10board),
+  X12board=ifelse(str_detect(X12board,"0"),NA,X12board),
+  X10board = as.factor(X10board),
+  X12board = as.factor(X12board)
+  ) %>%
+  group_by(X10board,X12board) %>%
+  summarise(n=n())
+
+```
+
+The above code worked but was cumbersome. Let us write a function to make it more readable and replace the boards in the data while conserving the original in case we need it later.
+
+```{r cleaning function}
+
+replace_by <- function(target, pattern, replaceby = deparse(substitute(pattern)), ifnotfound=target) {
+  ifelse(str_detect(target, paste(pattern,collapse = "|")),replaceby,ifnotfound)
+}
+
+
+#deparse(substitute) returns the variable name as a default argument if we don't specify replaceby value
+
+```
+
+```{r board_substitute}
+
+noncbseicse0 <- paste(c("cbse","icse","0"))
+
+data <- data %>% mutate(
+  
+  #Save original variables
+  X10board_orig= X10board, 
+  X12board_orig = X12board,
+  
+  #convert to char to facilitate string functions
+  X10board = as.character(X10board), 
+  X12board = as.character(X12board),
+  
+  #replace cbse and icse synonyms
+  X10board= replace_by(X10board,cbse_alt_names,"cbse"), 
+  X10board= replace_by(X10board,icse_alt_names,"icse"),
+  X12board= replace_by(X12board,cbse_alt_names,"cbse"),
+  X12board= replace_by(X12board,icse_alt_names,"icse"),
+  
+  #replace non cbse & icse and non 0 by state board
+  X10board= replace_by(X10board, noncbseicse0, X10board ,"state board"), 
+  X12board= replace_by(X12board,noncbseicse0, X12board, "state board"), 
+  
+  X10board= replace_by(X10board, "0",NA), # Convert 0 values to NA
+  X12board= replace_by(X12board, "0",NA),
+  
+  X10board = as.factor(X10board), #reconvert to factor
+  X12board = as.factor(X12board)
+  )
+
+```
+
+We can similarly see that Specialization has many unique values referring to all the different names of engineering courses across the country. The following code shows that 494 data-points are from courses which have appear fewer than 150 times.
+
+```{r Specialization}
+
+data %>%
+  group_by(Specialization) %>%
+  summarise(n=n()) %>%
+  arrange(n) %>%
+  filter(n<150) %>%
+  pull(n) %>%
+  sum()
+
+```
+
+In order to simplify the data, we will make 8 groups separating engineering disciplines.
+
+```{r specialization_separate}
+
+mechanical <- c("industrial & management engineering","mechanical & production engineering","industrial engineering","automobile/automotive engineering","mechanical and automation", "industrial & production engineering","mechanical engineering")
+
+computer <-c("computer and communication engineering" ,"computer networking", 
+             "computer science and technology","computer engineering",
+              "computer science & engineering")
+
+#eintc stands for electronics, instrumentation and telecommunication
+eintc <-c("electronics & instrumentation","control and instrumentation engineering","instrumentation engineering","mechatronics","applied electronics and instrumentation","electronics","embedded systems technology" ,"electronics and computer engineering","telecommunication engineering","electronics engineering",
+"instrumentation and control engineering","electronics & instrumentation eng" ,"electronics and communication engineering", "electronics & telecommunications")
+
+electrical <- c("electrical and power engineering","electrical engineering","electrical")
+
+IT <- c("information & communication technology", "information science",	
+                            "information science engineering", "computer application","information technology")
+
+biotech <- c("biomedical engineering" ,"biotechnology")
+
+other <- c("ceramic engineering","metallurgical engineering","aeronautical engineering","chemical engineering","other","electronics and electrical engineering")
+
+
+#check mutation spec
+
+ data %>% mutate(
+  
+  Specialization = as.character(Specialization),
+  spec_orig = Specialization,
+  
+  Specialization = replace_by(Specialization,mechanical),
+  Specialization = replace_by(Specialization,computer),
+  Specialization = replace_by(Specialization,eintc),
+  Specialization = replace_by(Specialization,electrical),
+  Specialization = replace_by(Specialization,IT),
+  Specialization = replace_by(Specialization,biotech),
+  Specialization = replace_by(Specialization,other),
+  Specialization = as.factor(Specialization)) %>%
+  group_by(Specialization, spec_orig) %>%
+  summarise(n=n()) %>%
+  arrange(Specialization) 
+
+```
+
+After adjusting the groups as necessary, we can mutate the original dataset keeping the originals if we need them later.
+
+```{r mutate_spec}
+
+#final mutate Specialization
+
+data<-data %>% mutate(
+  
+  Specialization = as.character(Specialization), #convert to char 
+  spec_orig = Specialization,   #backup of original
+  
+  
+  Specialization = replace_by(Specialization,mechanical),
+  Specialization = replace_by(Specialization,computer),
+  Specialization = replace_by(Specialization,eintc),
+  Specialization = replace_by(Specialization,electrical),
+  Specialization = replace_by(Specialization,IT),
+  Specialization = replace_by(Specialization,other),
+  
+  Specialization = as.factor(Specialization) #reconvert to factor
+  )
+
+```
+
+We see two year columns and the date of birth in the data. Some students may have been late in graduating because of having failed either in school or in their engineering exams. We will be able to analyze this by adding ear columns to the data.
+
+```{r date_use}
+
+#Number of years to graduate
+
+data <- data %>% mutate(time_to_grad = GraduationYear - year(DOB),
+                        time_to_X12 = X12graduation -year(DOB)) %>%
+   relocate(starts_with("time"), .after = CollegeState)  
+
+```
+
+In the columns computerprogramming to civilengg, -1 denotes an NA. The following code will replace the -1 with NA.
+
+```{r -1 to NA}
+
+replace_minus_one <- function(x){
+  ifelse(x==-1,NA,x)
+}
+
+data <- data%>%
+  mutate_at(.vars = vars(ComputerProgramming:CivilEngg),replace_minus_one)
+    
+  )
+
+```
 
 ## Including Plots
 
