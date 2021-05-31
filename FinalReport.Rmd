@@ -8,7 +8,7 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Intoduction
+# Introduction
 
 ## Abstract
 
@@ -53,7 +53,7 @@ The dataset contains 34 columns. The descriptions for these columns, as found on
 -   nueroticism: Scores in one of the sections of AMCAT's personality test
 -   openesstoexperience: Scores in one of the sections of AMCAT's personality test
 
-Lets check the contents of each column.
+Let us examine the contents of each column.
 
 The ID columns including college IDs and College City IDs are likely to be interpreted as 'numeric' values by the read csv function. We should however treat them as factors as the number itself only acts as an identifier and no information is encoded in its magnitude. The following script will load the data from the csv taking into account the correct variable types.
 
@@ -64,6 +64,7 @@ data<-read.csv2("./Engineering_graduate_salary.csv",
                                                     ID="factor",
                                                     DOB= "Date",
                                                     CollegeID="factor",
+                                                    CollegeTier="factor",
                                                     CollegeCityID="factor",
                                                     CollegeCityTier="factor")
                 ,stringsAsFactors = TRUE)
@@ -72,7 +73,7 @@ data%>% glimpse()
 
 ```
 
-We will need to swswitch back to string datatype for cleaning operations but this is easily done with the "as" family of functions inside "mutate".
+We will need to switch back to string datatype for cleaning operations but this is easily done with the 'as' family of functions inside 'mutate'.
 
 ## Data Pre-processing
 
@@ -89,11 +90,11 @@ data %>% group_by(X10board,X12board) %>%
 
 ```
 
-Cleaning these fields necessitates some background knowledge of the education system in India. The rationale is given in the following paragraph.
+Cleaning these fields necessitates some background knowledge of the education system in India. The rationale for the cleaning method employed is given in the following paragraph.
 
 Indian students have many significant exams in their life, the first being 10th standard exam (grade) which is generally taken at 16 years old. The next exam is the 12th standard exam which is taken at 18 years old and is accompanied by entrance examinations into professional courses. Each Indian state has their own "State Education board"; a body which sets curricula and conducts the examinations. There are also two other significant national boards of education, namely, the CBSE (Central Board of Secondary Education) and the ICSE(Indian Certificate of Secondary Education) to which schools can be associated. Fewer schools are associated with ICSE and CBSE than the state boards. Since we don't have many examples from each state board and sometimes we don't have information about the state at all, we shall be grouping all State Boards into one category.
 
-First, we will identify all typing mistakes, alternate names and research school names to fin the correct board by row and add them to a variable storing alternate names. Next,we can replace the names and group to see the result. We will replace all the 0s with NA.
+First, by row, we will identify all typing mistakes, alternate names and research school names to find the correct board and add them to a variable storing alternate names. Next,we can replace the names and group to see the result. We will replace all the 0s with NA.
 
 ```{r cleaning boards}
 
@@ -225,7 +226,7 @@ other <- c("ceramic engineering","metallurgical engineering","aeronautical engin
 
 ```
 
-After adjusting the groups as necessary, we can mutate the original dataset keeping the originals if we need them later.
+After adjusting the groups as necessary, we can mutate the dataset keeping the originals if we need them later.
 
 ```{r mutate_spec}
 
@@ -272,16 +273,19 @@ replace_minus_one <- function(x){
 data <- data%>%
   mutate_at(.vars = vars(ComputerProgramming:CivilEngg),replace_minus_one)
     
-  )
+  
 
 ```
 
-## Including Plots
+### Missing Data
 
-You can also embed plots, for example:
+As is common with real world datasets, we have many columns of missing data. Our choices with respect to this missing data will affect the accuracy of our prediction model and the quality of the insights that we get from it. Let us examine which columns have missing values and how many.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r missing data}
+sapply(data,  function(x) sum(is.na(x))) %>%
+  as.data.frame() %>%
+  filter(.>0) %>%
+  print.data.frame()
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+One option is to

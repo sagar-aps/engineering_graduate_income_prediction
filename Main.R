@@ -24,6 +24,7 @@ glimpse(data)
 data<-read.csv2("./Engineering_graduate_salary.csv",
                   sep = ",",dec = ".",colClasses = c(DOB= "Date",
                                                     CollegeID="factor",
+                                                    CollegeTier="factor",
                                                     CollegeCityID="factor",
                                                     CollegeCityTier="factor")
                 ,stringsAsFactors = TRUE)
@@ -191,6 +192,7 @@ data<-data %>% mutate(
   Specialization = replace_by(Specialization,eintc),
   Specialization = replace_by(Specialization,electrical),
   Specialization = replace_by(Specialization,IT),
+  Specialization = replace_by(Specialization,biotech),
   Specialization = replace_by(Specialization,other),
   
   Specialization = as.factor(Specialization) #reconvert to factor
@@ -231,6 +233,15 @@ data <- data %>% mutate(
 
 
 
+
+
+
+
+
+
+
+
+
 #Many columns of our data are actually categorical data represented as numbers. We need to use MCA and not PCA on this data
 
 glimpse(data)
@@ -268,6 +279,131 @@ data %>%
   relocate(starts_with("time"), .after = CollegeState)  
 
 
+data<- data %>% 
+  # dplyr::relocate(disp) %>% ## simply make disp the first column
+  relocate(c("ID","DOB"), .after = Salary)  
+
+
+replace_minus_one <- function(x){
+  ifelse(x==-1,NA,x)
+}
+
+data <- data%>%
+  mutate_at(.vars = vars(ComputerProgramming:CivilEngg),replace_minus_one)
+
+cleaned_data <- data %>% select(Gender:Salary)
+
+
+countexams <- function(x){
+  7 - sum(is.na(x))
+}
+
+data %>% select(ComputerProgramming:CivilEngg) %>%
+  apply(MARGIN=1, countexams) %>%
+  hist()
+
+
+##Dimensions
+
+#gender ~ Salary
+
+data %>% 
+  select(Gender,Salary) %>%
+  group_by(Gender) %>%
+  summarise(n = n(), avg = mean(Salary), se = sd(Salary)/sqrt(n)) %>%
+  ggplot(aes(x = Gender, y = avg, ymin = avg - 2*se, ymax = avg + 2*se)) + 
+  geom_errorbar() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+
+
+data %>% 
+  select(Gender,Salary) %>%
+  ggplot(aes(Gender,Salary)) +
+  geom_boxplot()+
+  ylim(0,1000000)
+  
+#It doesn't appear that girls get paid less than boys at median. The spread 
+# is highter for boys though and there is more variation in the income
+# compared to girls.
+
+
+
+#Board ~ Salary
+
+
+
+data %>% 
+  select(X10board,X12board, Salary) %>%
+  mutate(
+    Board_Concat = paste(X10board,"-",X12board)
+  ) %>%
+  #select(Board_Concat,Salary) %>%
+  #filter(is.na(Non_State_Board)==FALSE ) %>%
+  ggplot(aes(Board_Concat,Salary)) +
+  geom_boxplot()+
+  ylim(0,1000000)+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_abline(slope = 0, intercept = 500*80*12, alpha=0.2) 
+
+#Examining concatednated boards, we percieve ICSE and CBSE students to 
+#have higher salaries. We can distill the result into exposure to any of 
+#these boards.
+
+# icse/cbse (Exposure to central board)  vs salary
+
+data %>% 
+  select(X10board,X12board, Salary) %>%
+  mutate(
+    Non_State_Board = ifelse(X10board=="icse" | X12board =="icse","ICSE",
+                              ifelse(X10board =="cbse" | X12board =="cbse","CBSE",
+                              ifelse(is.na (X10board) & is.na(X12board), NA ,"State")
+                              ))
+  ) %>%
+  select(Non_State_Board,Salary) %>%
+  filter(is.na(Non_State_Board)==FALSE ) %>%
+  ggplot(aes(Non_State_Board,Salary)) +
+  geom_boxplot()+
+  ylim(0,1000000)
+
+#The median income for students with exposure to central boards is higher
+
+  
+  
+data %>% mutate(
+  Non_State_Board = ifelse(X10board=="icse" | X12board =="icse","ICSE",
+                           ifelse(X10board =="cbse" | X12board =="cbse","CBSE",
+                                  ifelse(is.na (X10board) & is.na(X12board), NA ,"State")
+                           ))
+) %>% ggplot(aes(shape=Non_State_Board))+
+  geom_point(aes(X10percentage,Salary),color='blue', alpha=0.3)+
+  geom_point(aes(X12percentage,Salary),color='red', alpha=0.3)+
+  xlab("X10 in blue, X12 in red")+
+  ylim(0,1e+06)
+
+#Above plot is of X10 and X12 scores against Salary. Since the right bottom
+#is the most heavily populated region, we can infer that high marks in 
+#10th or 12th isn't a great indicator of the first Salary
+
+
+
+#Discipline vs Salary
+require(scales)
+
+data %>% 
+  select(Specialization, Salary) %>%
+  ggplot(aes(Specialization,Salary)) +
+  geom_boxplot()+
+  ylim(0,1000000)+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_abline(slope = 0, intercept = 600*80*12, alpha=0.2) 
+
+
+#Quantitative variables : X10perc, X12perc, 
+
+cor(cleaned_data$English,cleaned_data$Salary)
+cor(cleaned_data$Quant,cleaned_data$Salary)
+cor(cleaned_data$Logical,cleaned_data$Salary)
 
 
 install.packages(c("FactoMineR", "factoextra"))
@@ -277,11 +413,22 @@ library("FactoMineR")
 library("factoextra")
 library("missMDA")
 
+res.ncp <- estim_ncpFAMD(cleaned_data)
+
+cleaned_imputed <- imputeFAMD(cleaned_data , ncp = 2)
+
+dat.famd <- FAMD(cleaned_data, tab.disj = cleaned_imputed$tab.disj)
+
+
+
+#plot.PCA(dat.famd, axes=c(1, 2), choix="var")
 
 
 FAMD()
 
 #PCA MCA
+
+
 
 
 
