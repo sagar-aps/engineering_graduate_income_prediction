@@ -279,7 +279,7 @@ data <- data%>%
 
 ### Missing Data
 
-As is common with real world datasets, we have many columns of missing data. Our choices with respect to this missing data will affect the accuracy of our prediction model and the quality of the insights that we get from it. Let us examine which columns have missing values and how many.
+As is common with real world datasets, we have many NA in our data. Our choices with respect to this missing data will affect the accuracy of our prediction model and the quality of the insights that we get from it. Let us examine which columns have missing values and how many.
 
 ```{r missing data}
 sapply(data,  function(x) sum(is.na(x))) %>%
@@ -288,4 +288,30 @@ sapply(data,  function(x) sum(is.na(x))) %>%
   print.data.frame()
 ```
 
-One option is to
+One option is to impute the missing data. This can be done with the MissMDA package by running the following command:
+
+```{r impute_all}
+
+#Takes hours to run so don't run unless you have the time
+
+# cleaned_imputed <- imputeFAMD(cleaned_data , ncp = 2)
+
+```
+
+However, we can see that a VERY large amount of data is missing in the columns \``ComputerProgramming:CivilEngg`\`. Another approach would be to take the mean of all the columns (excluding NAs). This seems like a good approach if we consider all tests to be equal. Let us check this assumption.
+
+```{r check_exam_equivalency}
+
+
+cleaned_data %>% select(ComputerProgramming:CivilEngg) %>%
+  gather("Discipline","Score")%>%
+  na.omit()%>%
+  ggplot(aes(Discipline,Score)) +
+  geom_boxplot()+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+It is clear that some tests were clearly harder than others (or that students are systematically worse in certain disciplines). In order to account for each tests' difficulty, we can scale the variables and then take a mean. However, one may ask, what if some students took multiple exams not linked to their disciplines, 'for fun'?
+
+For these "jacks of all trades", we can include in a separate column, the highest scale attained in any of the tests as well as the number of tests taken. Maybe we will discover that higher salary is linked to the number of tests the students were willing to take.

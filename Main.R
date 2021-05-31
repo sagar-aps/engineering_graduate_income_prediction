@@ -272,6 +272,26 @@ sapply(data, function(x) sum(is.na(x))) %>%
   as.data.frame() %>%
   filter(.>0)
 
+#from the above result, we can see that the majority of values in these columns are NAs.
+
+#We can't exlude rows with NA as each row has at least one NA.
+
+#We can replace the NA by encoding it with a -1 but this will have unpredictable results.
+
+#We can average the scores on each test taken but the tests could have had varying difficulty 
+
+#To account for this, we could scale each of the variables and take the average of each non NA score
+
+#We can also add a variable to show the number of tests taken
+
+#We don't lose too much because we already have the specialization name from another field.
+
+
+
+
+
+data %>% pull(MechanicalEngg)  %>% scale()
+
 #reorder columns
 
 data %>% 
@@ -399,6 +419,36 @@ data %>%
   geom_abline(slope = 0, intercept = 600*80*12, alpha=0.2) 
 
 
+# NA treatment
+
+cleaned_data %>% select(ComputerProgramming:CivilEngg) %>%
+  gather("Discipline","Score")%>%
+  na.omit()%>%
+  ggplot(aes(Discipline,Score)) +
+  geom_boxplot()+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+test_encode <-cleaned_data %>% select(ComputerProgramming:CivilEngg) %>%
+ mutate_all(funs(scale)) %>%
+  mutate(tests_taken = rowSums(!is.na(.))) %>%
+  rowwise() %>%
+  mutate(MaxScaledScore = max(c_across(-tests_taken),na.rm = TRUE)) %>%
+  select(tests_taken,MaxScaledScore)
+
+cbind()
+
+backup_cleaned_data<- cleaned_data 
+
+cleaned_data <- backup_cleaned_data
+
+cleaned_data <- cleaned_data %>%
+  cbind(test_encode) %>%
+  relocate(c("tests_taken","MaxScaledScore"), .after = Domain)%>%
+  relocate(ComputerProgramming:CivilEngg, .after = Salary)
+  
+
 #Quantitative variables : X10perc, X12perc, 
 
 cor(cleaned_data$English,cleaned_data$Salary)
@@ -413,7 +463,12 @@ library("FactoMineR")
 library("factoextra")
 library("missMDA")
 
-res.ncp <- estim_ncpFAMD(cleaned_data)
+#res.ncp <- estim_ncpFAMD(cleaned_data)
+#Takes too much time
+
+
+
+
 
 cleaned_imputed <- imputeFAMD(cleaned_data , ncp = 2)
 
