@@ -1,57 +1,118 @@
 ---
 title: "Engineering Graduate Income Prediction"
 author: "Sagar Apshankar"
-output: github_document
+output: 
+  pdf_document
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 # Introduction
 
 ## Abstract
 
-India produces \~1.5 M engineering graduates per year. This humongous number is due to the fact that Indians see professions such as medicine, engineering and law as secure futures for their children and bank on their degrees as a way into the middle class. However, there is significant variation in the incomes of graduates of a discipline. Students from populous modern cities are perceived to have an edge over others from the hinterland. The variability in competence between graduates combined with disparity in opportunities available has given rise to a new industry of job placement. Agencies test fresh graduates on their skills and help them get into jobs. The dataset we are going to analyze comes from one such training and placement agency called AMCAT.
+India produces \~1.5 M engineering graduates per year. This humongous number is due to the fact that Indians see professions such as medicine, engineering and law as secure futures for their children and bank on their degrees as a way into the middle class. However, there is significant variation in the incomes of graduates of a discipline. Students from populous modern cities are perceived to have an edge over those from the hinterland. The variability in competence between graduates combined with disparity in opportunities available has given rise to a new industry of job placement. Agencies test fresh graduates on their skills and help them get into jobs. The dataset we are going to analyze comes from one such training and placement agency called AMCAT. The following code chunks load the packages needed to run this report. The csv file of the data is available at this link and is also supplied without any changes with this report.
+
+```{r libraries , message=FALSE}
+
+
+packages_required <-c("dplyr", # Wrangling
+  "ggplot2", #for graphics
+  "plotly", #graphics 3D chart
+  "stringr", #string operations
+  "tidyr", # Wrangling
+  "caret", #for CreateDataPartition and train()
+  "ggthemes", #for graphics themes
+  "reshape", #for wrangling, partucularly the melt function
+  "lubridate", #for dealing with dates
+  "tidyverse", # Wrangling
+  "FactoMineR", #PCA analysis
+  "factoextra", #PCA analysis
+  "missMDA", #imputation of missing data
+  "rpart", #ML DT algorithm
+  "rpart.plot", #ML DT graphics algorithm
+  "randomForest", #ML RF algorithm
+  "xgboost",#ML RF algorithm
+  "kableExtra") #ML algorithm
+
+using<-function(...) {
+  libs<-unlist(list(...))
+  req<-unlist(lapply(libs,require,character.only=TRUE))
+  need<-libs[req==FALSE]
+  if(length(need)>0){ 
+    install.packages(need)
+    lapply(need,require,character.only=TRUE)
+  }
+}
+
+
+using(packages_required)
+
+
+```
 
 ## Executive Summary
 
 The dataset contains 34 columns. The descriptions for these columns, as found on <https://www.kaggle.com/manishkc06/engineering-graduate-salary-prediction> are as follows:
 
--   ID: A unique ID to identify a candidate
--   Salary: Annual CTC offered to the candidate (in INR)
--   Gender: Candidate's gender
--   DOB: Date of birth of the candidate
--   10percentage: Overall marks obtained in grade 10 examinations
--   10board: The school board whose curriculum the candidate followed in grade 10
--   12graduation: Year of graduation - senior year high school
--   12percentage: Overall marks obtained in grade 12 examinations
--   12board: The school board whose curriculum the candidate followed
--   CollegeID: Unique ID identifying the university/college which the candidate attended for her/his undergraduate
--   CollegeTier: Each college has been annotated as 1 or 2. The annotations have been computed from the average AMCAT scores obtained by the students in the college/university. Colleges with an average score above a threshold are tagged as 1 and others as 2.
--   Degree: Degree obtained/pursued by the candidate
--   Specialization: Specialization pursued by the candidate
--   CollegeGPA: Aggregate GPA at graduation
--   CollegeCityID: A unique ID to identify the city in which the college is located in.
--   CollegeCityTier: The tier of the city in which the college is located in. This is annotated based on the population of the cities.
--   CollegeState: Name of the state in which the college is located
--   GraduationYear: Year of graduation (Bachelor's degree)
--   English: Scores in AMCAT English section
--   Logical: Score in AMCAT Logical ability section
--   Quant: Score in AMCAT's Quantitative ability section
--   Domain: Scores in AMCAT's domain module
--   ComputerProgramming: Score in AMCAT's Computer programming section
--   ElectronicsAndSemicon: Score in AMCAT's Electronics & Semiconductor Engineering section
--   ComputerScience: Score in AMCAT's Computer Science section
--   MechanicalEngg: Score in AMCAT's Mechanical Engineering section
--   ElectricalEngg: Score in AMCAT's Electrical Engineering section
--   TelecomEngg: Score in AMCAT's Telecommunication Engineering section
--   CivilEngg: Score in AMCAT's Civil Engineering section
--   conscientiousness: Scores in one of the sections of AMCAT's personality test
--   agreeableness: Scores in one of the sections of AMCAT's personality test
--   extraversion: Scores in one of the sections of AMCAT's personality test
--   nueroticism: Scores in one of the sections of AMCAT's personality test
--   openesstoexperience: Scores in one of the sections of AMCAT's personality test
+-   `ID`: A unique ID to identify a candidate
+-   **`Salary`:** First annual salary offered to the candidate (in INR)
+-   `Gender`: Candidate's gender
+-   `DOB`: Date of birth of the candidate
+-   `10percentage`: Overall marks obtained in grade 10 examinations
+-   `10board`: The school board whose curriculum the candidate followed in grade 10
+-   `12graduation`: Year of graduation - senior year high school
+-   `12percentage`: Overall marks obtained in grade 12 examinations
+-   `12board`: The school board whose curriculum the candidate followed
+-   `CollegeID`: Unique ID identifying the university/college which the candidate attended for her/his undergraduate with 1173 levels.
+-   `CollegeTier`: Each college has been annotated as 1 or 2. The annotations have been computed from the average AMCAT scores obtained by the students in the college/university. Colleges with an average score above a threshold are tagged as 1 and others as 2.
+-   `Degree`: Degree obtained/pursued by the candidate
+-   `Specialization`: Specialization pursued by the candidate
+-   `CollegeGPA`: Aggregate GPA at graduation
+-   `CollegeCityID`: A unique ID to identify the city in which the college is located in.
+-   `CollegeCityTier`: The tier of the city in which the college is located in. This is annotated based on the population of the cities.
+-   `CollegeState`: Name of the state in which the college is located, a factor of 26 levels
+-   `GraduationYear`: Year of graduation (Bachelor's degree)
+-   `English`: Scores in AMCAT English section
+-   `Logical`: Score in AMCAT Logical ability section
+-   `Quant`: Score in AMCAT's Quantitative ability section
+-   `Domain`: Scores in AMCAT's domain module
+-   `ComputerProgramming`: Score in AMCAT's Computer programming section
+-   `ElectronicsAndSemicon`: Score in AMCAT's Electronics & Semiconductor Engineering section
+-   `ComputerScience`: Score in AMCAT's Computer Science section
+-   `MechanicalEngg`: Score in AMCAT's Mechanical Engineering section
+-   `ElectricalEngg`: Score in AMCAT's Electrical Engineering section
+-   `TelecomEngg`: Score in AMCAT's Telecommunication Engineering section
+-   `CivilEngg`: Score in AMCAT's Civil Engineering section
+-   `conscientiousness`: Scores in one of the sections of AMCAT's personality test. Conscientiousness is defined as the quality of wishing to do one's work or duty well and thoroughly.
+-   `agreeableness`: Scores in one of the sections of AMCAT's personality test. Agreeableness describes a person's ability to put other people's needs above their own.
+-   `extraversion`: Scores in one of the sections of AMCAT's personality test. Extraversion is the state of primarily obtaining gratification from outside oneself. Extraverts tend to enjoy human interactions and to be enthusiastic, talkative, assertive, and gregarious.
+-   `nueroticism`: Scores in one of the sections of AMCAT's personality test. Neuroticism, in psychology and development, a broad personality trait dimension representing the degree to which a person experiences the world as distressing, threatening, and unsafe.
+-   `openesstoexperience`: Scores in one of the sections of AMCAT's personality test.
+
+### Objective
+
+This analysis aims primarily to make a model which can predict the first annual salary of the individual by using the all of supporting information in the rows. It also aims to understand with the help of the best model, the comparative importance of each variable in making a prediction of the Salary which is the outcome.
+
+### Key Steps
+
+-   Analyze nature of data in each column and load data converting to appropriate data type
+
+-   Standardize free-text columns into usable factors retaining only the minimum required variability
+
+-   Change non-useful variables into more useful ones using calculations where necessary.
+
+-   Minimize NA values by combining variables and then impute the rest while minimizing loss to data integrity
+
+-   Perform PCA on the dataset to understand broad tendencies
+
+-   Weed out erroneous and extreme values based on the 3 \* sd rule
+
+-   Find optimum parameters to reduce complexity of data by training multiple lm algorithms and partition the data into 80/20 training and test set
+
+-   Introduce, motivate and then use algorithms RandomForest, XgBoost, NeuralNetwork to predict Salary and compare them
+
+# Data Pre-processing
+
+## Data Loading
 
 Let us examine the contents of each column.
 
@@ -59,7 +120,9 @@ The ID columns including college IDs and College City IDs are likely to be inter
 
 ```{r load_data}
 
-data<-read.csv2("./Engineering_graduate_salary.csv",
+url_file =  "https://raw.githubusercontent.com/sagar-aps/engineering_graduate_income_prediction/main/Engineering_graduate_salary.csv"
+
+data<-read.csv2(url(url_file),
                   sep = ",",dec = ".",colClasses = c(
                                                     ID="factor",
                                                     DOB= "Date",
@@ -73,14 +136,19 @@ data%>% glimpse()
 
 ```
 
-We will need to switch back to string datatype for cleaning operations but this is easily done with the 'as' family of functions inside 'mutate'.
+For our factors, we will need to switch back temporarily to string datatype for cleaning operations but this is easily done with the 'as' family of functions inside 'mutate'.
 
-## Data Pre-processing
+A big challenge in analyzing this data comes from the free-text columns `X12board`, `X10board` and `specialization` which have multiple values representing the same idea.
 
-A cursory look through the data tells us that X10 board, X12board and Specialization have many unique values and will require a lot of cleaning.
+The other big challenge is that some 'factors' have far too many levels to be useful. `CollegeID` with 1173 different factor levels, most having a single row of representation is exemplary of this problem. In this section, we will first deal with the free-text columns. Calculating the degree to which we need to simplify the other columns will be dealt with using cross-validation to compare multiple lm models.
+
+A cursory look through the data tells us that `X10 board`, `X12board` and `Specialization` have many unique values and will require a lot of cleaning. Cleaning these fields necessitates some background knowledge of the education system in India. The rationale for the cleaning method employed is given in the following paragraph.
 
 ```{r why_clean_board}
 
+#next statement supresses warning :
+#`summarise()` has grouped output by 'X10board'. You can override using the `.groups` argument.
+options(dplyr.summarise.inform = FALSE)
 
 data %>% group_by(X10board,X12board) %>%
   summarise(n=n()) %>%
@@ -90,16 +158,18 @@ data %>% group_by(X10board,X12board) %>%
 
 ```
 
-Cleaning these fields necessitates some background knowledge of the education system in India. The rationale for the cleaning method employed is given in the following paragraph.
+Indian students have two significant exams in their life, the first being 10th standard exam (grade) which is generally taken at 16 years old. The next exam is the 12th standard exam which is taken at 18 years old and is accompanied by entrance examinations into professional courses such as engineering. Each Indian state has their own "State Education board"; a body which sets curricula and conducts the examinations. There are also two other significant national boards of education, namely, the CBSE (Central Board of Secondary Education) and the ICSE(Indian Certificate of Secondary Education) to which schools can be associated. Fewer schools are associated with ICSE and CBSE than the state boards. The ICSE was established to provide special education to mixed race British-Indians and the CBSE, to provide education for wards of central government and military wards who changed schools frequently because of transfers of their parents. These are known by many other acronyms such as "aissce" for CBSE. As an example of the nature of cleaning required, "central" refers to "Central Board for Secondary Education", a.k.a "CBSE". Moreover, some students have used the name of their school instead of the board names.
 
-Indian students have many significant exams in their life, the first being 10th standard exam (grade) which is generally taken at 16 years old. The next exam is the 12th standard exam which is taken at 18 years old and is accompanied by entrance examinations into professional courses. Each Indian state has their own "State Education board"; a body which sets curricula and conducts the examinations. There are also two other significant national boards of education, namely, the CBSE (Central Board of Secondary Education) and the ICSE(Indian Certificate of Secondary Education) to which schools can be associated. Fewer schools are associated with ICSE and CBSE than the state boards. Since we don't have many examples from each state board and sometimes we don't have information about the state at all, we shall be grouping all State Boards into one category.
+Since we don't have many examples from each state board and sometimes we don't have information about the state at all, we shall be grouping all State Boards into one category.
 
-First, by row, we will identify all typing mistakes, alternate names and research school names to find the correct board and add them to a variable storing alternate names. Next,we can replace the names and group to see the result. We will replace all the 0s with NA.
+First, by row, we will identify all typing mistakes, alternate names and research school names to find the correct education board and add them to a variable storing alternate names. Next,we can replace the names and group to see the result. We will replace all the 0s with NA.
 
 ```{r cleaning boards}
 
+#We first make a list of all non-standard values in the columns X10board and X12board.
 
-cbse_alt_names <- c("central","cbse","delhi public school", "jawahar navodaya vidyalaya ","all india board " ,"cbsc","aissce","aisse")
+cbse_alt_names <- c("central","cbse","delhi public school", 
+                    "jawahar navodaya vidyalaya ","all india board " ,"cbsc","aissce","aisse")
 icse_alt_names <- c("certificate", "icse", "cisce", "isc", "anglo")
 
 data %>% mutate(
@@ -121,7 +191,7 @@ data %>% mutate(
 
 ```
 
-The above code worked but was cumbersome. Let us write a function to make it more readable and replace the boards in the data while conserving the original in case we need it later.
+The above code worked but was cumbersome. In the next code chunk, we write a function to make it more readable and replace the boards in the data.
 
 ```{r cleaning function}
 
@@ -130,9 +200,16 @@ replace_by <- function(target, pattern, replaceby = deparse(substitute(pattern))
 }
 
 
-#deparse(substitute) returns the variable name as a default argument if we don't specify replaceby value
+#replaceby defaults to the variable name of the variable containing values to be replaced.
+#if the name is cbse_alt_names, all the alternative names will be replaced with "cbse_alt_names" by default.
+
+#ifnotfound defaults to the value of the target variable for the particular row
+#if the value doesn't match our pattern, we want it remain unchanged. We do this by copying the original value.
+
 
 ```
+
+The next piece of code replaces the boards using our function.
 
 ```{r board_substitute}
 
@@ -165,9 +242,15 @@ data <- data %>% mutate(
   X12board = as.factor(X12board)
   )
 
+
+#We reconvert to factor as string values aren't useful for training ML algortihms.
+#A finite list of values represented by factors is more suited to this purpose. 
+#These are automatically assigned numbers in the algorithms.
 ```
 
-We can similarly see that Specialization has many unique values referring to all the different names of engineering courses across the country. The following code shows that 494 data-points are from courses which have appear fewer than 150 times.
+We can similarly see that Specialization has many unique values referring to all the different names of engineering courses across the country. Factors are only useful for prediction if they have many instances in the data. Grouping of similar courses, thus is mandatory if we want to use the variables.
+
+The following code shows that 494 data-points for the column `Specialization` are from courses which have appear fewer than 150 times (5% of the data). A factor which has less than 5% of instances is difficult to use since we have very little data to train from and thus would run the risk of overfitting.
 
 ```{r Specialization}
 
@@ -185,24 +268,35 @@ In order to simplify the data, we will make 8 groups separating engineering disc
 
 ```{r specialization_separate}
 
-mechanical <- c("industrial & management engineering","mechanical & production engineering","industrial engineering","automobile/automotive engineering","mechanical and automation", "industrial & production engineering","mechanical engineering")
+mechanical <- c("industrial & management engineering","mechanical & production engineering",
+                "industrial engineering","automobile/automotive engineering",
+                "mechanical and automation", "industrial & production engineering",
+                "mechanical engineering")
 
 computer <-c("computer and communication engineering" ,"computer networking", 
              "computer science and technology","computer engineering",
               "computer science & engineering")
 
 #eintc stands for electronics, instrumentation and telecommunication
-eintc <-c("electronics & instrumentation","control and instrumentation engineering","instrumentation engineering","mechatronics","applied electronics and instrumentation","electronics","embedded systems technology" ,"electronics and computer engineering","telecommunication engineering","electronics engineering",
-"instrumentation and control engineering","electronics & instrumentation eng" ,"electronics and communication engineering", "electronics & telecommunications")
+
+eintc <-c("electronics & instrumentation","control and instrumentation engineering",
+          "instrumentation engineering","mechatronics","applied electronics and instrumentation",
+          "electronics","embedded systems technology" ,"electronics and computer engineering",
+          "telecommunication engineering","electronics engineering",
+          "instrumentation and control engineering","electronics & instrumentation eng" ,
+          "electronics and communication engineering", "electronics & telecommunications")
 
 electrical <- c("electrical and power engineering","electrical engineering","electrical")
 
-IT <- c("information & communication technology", "information science",	
-                            "information science engineering", "computer application","information technology")
+#IT is generally a separate discipline from computer science in Indian engineering schools 
+
+IT <- c("information & communication technology", "information science",
+        "information science engineering", "computer application","information technology")
 
 biotech <- c("biomedical engineering" ,"biotechnology")
 
-other <- c("ceramic engineering","metallurgical engineering","aeronautical engineering","chemical engineering","other","electronics and electrical engineering")
+other <- c("ceramic engineering","metallurgical engineering","aeronautical engineering",
+           "chemical engineering","other","electronics and electrical engineering")
 
 
 #check mutation spec
@@ -250,7 +344,7 @@ data<-data %>% mutate(
 
 ```
 
-We see two year columns and the date of birth in the data. Some students may have been late in graduating because of having failed either in school or in their engineering exams. We will be able to analyze this by adding ear columns to the data.
+We see two year columns and the date of birth in the data. Some students may have been late in graduating because of having failed either in school or in their engineering exams. We will be able to analyze this by adding `time_to_grad` and `time_to_X12` columns to the data.
 
 ```{r date_use}
 
@@ -262,7 +356,7 @@ data <- data %>% mutate(time_to_grad = GraduationYear - year(DOB),
 
 ```
 
-In the columns computerprogramming to civilengg, -1 denotes an NA. The following code will replace the -1 with NA.
+In the columns `computerprogramming` to `civilengg`, -1 denotes that the student hasn't taken the test. In other words, it denotes an NA. The following code will replace -1 with NA.
 
 ```{r -1 to NA}
 
@@ -277,28 +371,39 @@ data <- data%>%
 
 ```
 
-### Missing Data
+Finally, we make a dataframe with all our now clean data.
 
-As is common with real world datasets, we have many NA in our data. Our choices with respect to this missing data will affect the accuracy of our prediction model and the quality of the insights that we get from it. Let us examine which columns have missing values and how many.
+```{r cleaned data}
+
+cleaned_data <- data %>% select(Gender:Salary)
+
+```
+
+## Missing Data
+
+As is common with real world datasets, we have many NAs in our data. Our choices with respect to this missing data will affect the accuracy of our prediction model and the quality of the insights that we get from it. Let us examine which columns have missing values and how many.
 
 ```{r missing data}
-sapply(data,  function(x) sum(is.na(x))) %>%
+
+sapply(cleaned_data,  function(x) sum(is.na(x))) %>%
   as.data.frame() %>%
-  filter(.>0) %>%
+   `colnames<-` ("NAs") %>%
+  filter(NAs>0) %>%
+  mutate(percent = paste(round(NAs/nrow(cleaned_data)*100,1),"%"))%>%
   print.data.frame()
 ```
 
-One option is to impute the missing data. This can be done with the MissMDA package by running the following command:
+We see that more than 99% of the values from the variable `CivilEngg` are missing! One option is to impute the missing data directly. This can be done with the MissMDA package by running the following command. However, this is a bad idea because we then make an assumption of all students being able to score average (or another complex aggregate) marks in all of the tests increasing their impact on predictions.
 
-```{r impute_all}
+```{r impute_all, eval=FALSE}
 
 #Takes hours to run so don't run unless you have the time
 
-# cleaned_imputed <- imputeFAMD(cleaned_data , ncp = 2)
+ cleaned_imputed <- imputeFAMD(cleaned_data , ncp = 2)
 
 ```
 
-However, we can see that a VERY large amount of data is missing in the columns \``ComputerProgramming:CivilEngg`\`. Another approach would be to take the mean of all the columns (excluding NAs). This seems like a good approach if we consider all tests to be equal. Let us check this assumption.
+However, we see that the data in `ComputerProgramming:CivilEngg` is basically sparse and we may be able to capture the information by aggregating intelligently. A good approach would simplify this data while losing as little detail as is possible. A simple example would be to take the mean of all the columns (excluding NAs). This seems like a good approach if we consider all tests to be equal but this assumption needs to be verified.
 
 ```{r check_exam_equivalency}
 
@@ -312,6 +417,767 @@ cleaned_data %>% select(ComputerProgramming:CivilEngg) %>%
 
 ```
 
-It is clear that some tests were clearly harder than others (or that students are systematically worse in certain disciplines). In order to account for each tests' difficulty, we can scale the variables and then take a mean. However, one may ask, what if some students took multiple exams not linked to their disciplines, 'for fun'?
+It is clear that some tests were clearly harder than others (or that students are systematically worse in certain disciplines). A simple average excluding NAs would thus not do.
 
-For these "jacks of all trades", we can include in a separate column, the highest scale attained in any of the tests as well as the number of tests taken. Maybe we will discover that higher salary is linked to the number of tests the students were willing to take.
+In order to account for each tests' difficulty, we can scale the variables and then take a mean. However, one may ask, what if some students took multiple exams not linked to their disciplines, 'for fun'?
+
+For these "jacks of all trades", we can include in a separate column, the highest scale attained in any of the tests as well as the number of tests taken.
+
+The following code makes uses the data available in those columns to make a meaningful summary variable and reduce NAs in the process.
+
+We also remove DOB as logically as we have already used it to calculate time to graduate and time to 12th standard. As such, our calculated variables are definitely better indicators for Salary than the DOB itself.
+
+```{r subject tests summary, warning=FALSE, message=FALSE}
+
+
+
+cleaned_NA_treated_data <- cleaned_data %>% select(ComputerProgramming:CivilEngg) %>%
+  mutate_all(funs(scale)) %>%
+  mutate(MaxScaledScore = apply(X=., MARGIN=1,FUN = max, na.rm=TRUE)) %>%
+  mutate(MeanScale = rowMeans(.,na.rm = TRUE),
+         TestsTaken = rowSums(!is.na(.))-1)%>%
+          select(MaxScaledScore:TestsTaken) %>%
+  mutate_all(.,.funs = function(x){ifelse(is.infinite(x),NA,x)})%>%
+  cbind(cleaned_data %>% select(-c(ComputerProgramming:CivilEngg))) %>%
+  relocate(1:3, .after = Domain)%>%
+  select(-DOB)%>% #We included information in time_to_graduate
+  select(-CollegeID)%>% #We remove factors with too many levels before PCA
+  select(-CollegeCityID)%>%
+  mutate(Salary_Cat = cut(Salary,c(seq(0,1000000,200000),10000000)))
+  
+```
+
+We can see from the following code chunk that the NAs in the data have now drastically reduced.
+
+```{r check NA in NA treated data}
+
+
+sapply(cleaned_NA_treated_data,  function(x) sum(is.na(x))) %>%
+  as.data.frame() %>%
+   `colnames<-` ("Nas") %>%
+  filter(Nas>0) %>%
+  mutate(percent = paste(round(Nas/nrow(cleaned_data)*100,1),"%"))%>%
+  print.data.frame()
+
+```
+
+## Principal Components
+
+Principal Component Analysis, or PCA, is a dimensionality-reduction method that is often used to reduce the dimensionality of large data sets, by transforming a large set of variables into a smaller one that still contains most of the information in the large set. The data is reduced to a set of principal components (PC1, PC2, PC3 and so on) out of which the lower PCs account for the maximum variability. Hence, by studying just the first two dimensions, we can build an idea of where the vriability in our data comes from.
+
+With so few rows having missing data (3% of scores and 8% of boards are missing) , we can impute the missing values and run FAMD (MCA + PCA). Although principal component methods are more suited to prediction of categorical variables from numeric variables, they can still be useful in for identifying patterns in data such as ours. We can hack around this by making groupings of the Salary using the \``cut`\` command.
+
+Moreover, the MissMDA package allows for imputing unknown data while minimizing the damage to data integrity.
+
+FAMD will help us identify which variables are the cause of maximum variability in our data. This in turn can allow us to eliminate variables from future analyses.
+
+We shouldn't include factor variables which have a very high number of levels like `CollegeID`(\>1000 factors) in the PCA as those columns then will become the source of the maximum variability overshadowing all other subtle variations that we are trying to uncover.
+
+```{r impute and FAMD}
+
+knitr::opts_chunk$set(cache = TRUE) #Don't re-run code unless it has changed
+
+cl_NA_tr_imputed <- imputeFAMD(cleaned_NA_treated_data , ncp = 5)
+
+imputed_data<-cl_NA_tr_imputed$completeObs
+
+dat.famd <- FAMD(cleaned_NA_treated_data, tab.disj = cl_NA_tr_imputed$tab.disj)
+
+
+```
+
+The first thing to note from the PCA correlation circle is that Dim 1 accounts for \~0.29% of the variability and Dim 2, 0.41%. This is low for a PCA analysis and tells us that there may be other latent factors (or missing variables) which are needed to fully explain the data.
+
+The correlation circle also tells us that `MaxScaledScore` and `MeanScale` are very heavily correlated. Having multiple heavily correlated variables introduces noise in linear regression models so we will drop one of them. `neurotiscism`, as can be expected has a negative correlation with all variables linked to testing logical ability. conscientiousness, `openness_to_experience` and `extraversion` also seem to be correlated but less so than `X10score`and `X12score`.
+
+We see that Salary is correlated with `Logical`, `Quant`, Scores and `Domain`. To examine this relationship more closely, we can colour the individuals factor map with salary buckets we created with `cut`.
+
+```{r salary_cut individuals, warning=FALSE}
+
+
+
+fviz_famd_ind(dat.famd,
+              label = "none,",
+              habillage = cleaned_NA_treated_data$Salary_Cat,
+              addEllipses = TRUE,
+              alpha.ind = 0.2
+              )
+
+```
+
+In the above graph, individuals are plotted on the first two PCA dimensions with their salary grouping. The ellipses have too much overlap but their centers show that PCA1 has a positive relationship with increasing salary. It is interesting to note that mid-high salaries are linked to a decreasing PCA dimension 2, a dimension with a high contribution of `extraversion`, `conscientiousness` and `openness_to_experience`. The last two categories have very few observations linked to them and the large ellipses show that the principal components weren't able to predict for them at all. It may be prudent to remove them from the dataset so as not to bias algorithms.
+
+```{r highest_salary}
+
+cleaned_NA_treated_data %>% ggplot(aes(Salary_Cat))+
+  geom_histogram(stat="count")
+
+```
+
+```{r summary FAMD}
+summary(dat.famd)
+fviz_screeplot(dat.famd)
+```
+
+We can see more clearly from the output of the summary that the first two dimensions account for 10.6 % of the variability in the data. `ctr` is the contribution to the principal component. `cos2` is how well the PC is capturing the variability.
+
+```{r dimension description}
+
+
+dimres <- dimdesc(dat.famd, axes = 1, proba = 0.05)
+
+  head(dimres$Dim.1$quanti, n=10)
+  head(dimres$Dim.1$quali, n=10)
+  head(dimres$Dim.1$category, n=10)
+  
+```
+
+From the output of the dimension description (`dimdesc` command), we can see that the first dimension, built with `MeanScale`, `Quant` and `Logical` points towards academic acumen of the individual. The next biggest contribution is that of `English` suggesting that prowess in English is important for Salary. Among the categorical variables, we see that CollegeTier=1 and X12board and X10 board make the most contribution. The second dimension, with `agreeableness`, `conscientiousness` and `openess_to_experience` as the major weights seems to account more for the personality of the individual. Finally, we can check the `factosummarize` results and compare the effect of each variable on the first two principal components.
+
+```{r var_contrib}
+
+facto_summarize(dat.famd, element = "var") %>%
+  arrange(-contrib)
+  
+
+```
+
+We have seen that variables `time_to_X12` , `time_to_grad`, `CollegeCityTier` and `Tests_Taken` have very low contribution in PC1 and PC2. Moreover, the contribution of variables `MeanScale` and `MaxScaledScore` was about the same, indicating that they are heavily correlated. We can confirm this by mapping correlations between all the quantitative variables. We can thus, drop some of them while making subsequent models.
+
+```{r correlation_matrix}
+
+# Correlation Matrix
+
+cormat<-imputed_data %>%
+  select(where(is.numeric))%>%
+  cor()%>%
+  round(digits = 2)
+
+
+# Get lower triangle of the correlation matrix
+get_lower_tri<-function(cormat){
+  cormat[upper.tri(cormat)] <- NA
+  return(cormat)
+}
+  
+upper_tri <- get_lower_tri(cormat)
+
+upper_tri%>%
+  melt(na.rm = TRUE) %>%
+  ggplot(aes(X1,X2, fill=value))+
+  geom_tile()+
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Pearson\nCorrelation") +
+  theme_minimal()+ 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                    hjust = 1))+
+  coord_fixed()
+  
+```
+
+## Variable choice and outlier treatment
+
+In order to run algorithms like linear regression, we will first remove the variables we saw to have very low effect or heavily correlated effect in the PCA. We will also add back variables with too many factors that we had removed for PCA.
+
+```{r Variable Selection}
+
+total_imputed_set <- imputed_data %>%
+  cbind(CollegeID = cleaned_data$CollegeID)%>%
+  cbind(CollegeCityID = cleaned_data$CollegeCityID)%>%
+  select(-TestsTaken)%>%
+  select(-MaxScaledScore)%>%
+  select(-Salary_Cat)
+
+
+```
+
+In order for any algorithm to give accurate predictions, and especially with linear regression, we need to filter out erroneous values and extremely high values. Such exceptions will skew the algorithm and produce a much less reliable result.
+
+There are many methods to identify such values. here we will us on of the simpler ones: to filter out values greater than 3 times the sd.
+
+```{r outlier treatment}
+
+upper <- mean(data$Salary)+3*sd(data$Salary)
+lower <- mean(data$Salary)-3*sd(data$Salary)
+
+total_imputed_set <- total_imputed_set %>%
+  filter(Salary<upper | Salary>lower)
+
+```
+
+In the next section, we split data into test and training sets and apply algorithms to find the Salary
+
+# Methods
+
+In order to comparatively compare methods we are using here, we will define a function to calculate the residual mean squared error (RMSE).
+
+```{r}
+
+RMSE <- function(true_salary, predicted_salary){
+  sqrt(mean((true_salary - predicted_salary)^2))
+}
+
+```
+
+## Linear regression
+
+Linear regression attempts to model the relationship between variables based on a line. It assigns a value to each level of a factor so as to minimize the error of the predicted variable. Thus, for each variable in the test set, we need to have all levels of factors available in the train set. This however leads to a problem with out dataset because we have a factor with far too many levels : `CollegeID`.
+
+First, we will add back from to the test set from the test set any rows which don't have a factor present in the train set. (if the algorithm doesn't know the value of its coefficient for a particular level of a variable, it can't predict for it).
+
+```{r naive generation}
+
+
+set.seed(755, sample.kind = "Rounding")
+
+test_index <- createDataPartition(y = total_imputed_set$Salary, times = 1, p = 0.2, 
+                                  list = FALSE)
+
+train_set <- total_imputed_set[-test_index,]
+test_set <- total_imputed_set[test_index,]
+
+
+#In order to perform linear regression , we ensure that all factor variables in the test set
+#are present in the train set.
+
+factor_names <- total_imputed_set %>%
+  select(-where(is.numeric))%>%
+  colnames()
+
+removed <- test_set %>% 
+  anti_join(train_set, by = factor_names) 
+
+test_set <- test_set %>% 
+  semi_join(train_set, by = factor_names) 
+
+train_set <- train_set %>%
+  rbind(removed)
+
+
+nrow(test_set)+nrow(train_set)
+#By this, we ensure that all data is being considered. 
+
+
+nrow(test_set)
+
+```
+
+We are left with less than 100 of the 901 we started with! This calls for a closer examination of the variable with the most levels, `CollegeID`.
+
+```{r explore CollegeID}
+
+total_imputed_set %>% group_by(CollegeID)%>%
+  summarise(n=n()) %>% 
+  arrange(-n)%>%
+  ggplot(aes(n))+
+  geom_histogram(bins=30)+
+  xlim(0,30)
+
+
+total_imputed_set[total_imputed_set$CollegeID %in% names(
+  which(table(total_imputed_set$CollegeID)>10)),
+  ] %>%
+  nrow()
+
+```
+
+We see that if we were to select rows with `CollegeID` repeated at least 10 times, we would be left with only 509 of the 2998 observations. One option is to drop the column altogether but in this case, we lose the information about common colleges too. The other is to group together 'obscure' colleges under a 'fake' `CollegeID` (9999). We will also simplify the states at the same time grouping ones which have far too little representation. Too few instances of a college or state can't be considered a representative sample. 
+
+This grouping now can now be treated as a tuning parameter. The code to select the ideal `min_coll` and `min_state` has been provided bus isn't set to run as it is very time consuming.
+
+```{r min_coll and min_state calculation , eval=FALSE, warning=FALSE, message=FALSE}
+
+res <- data.frame()
+
+
+for(min_coll in 5:25)
+{
+  
+  #first loop is for min_coll
+  
+
+  
+  for(min_state in 9:20)  
+    
+  {
+    
+    #second loop is for min_state
+    print(paste("min_coll = ",min_coll))
+    print(paste("min_state = ",min_state))
+    
+    college_ID_99999 <-  as.character(names(
+      which(table(total_imputed_set$CollegeID)<min_coll)))
+    
+    NorthEasternStates <- c("Sikkim","Meghalaya","Assam")
+    UnionTerritory <- c("Union Territory","Jammu and Kashmir")
+    
+    total_imputed_set_2 <- total_imputed_set %>%
+      mutate(CollegeState = as.character(CollegeState),
+             CollegeState = replace_by(CollegeState,c("Maharashtra","Goa"),"Maharashtra & Goa"),
+             CollegeState = replace_by(CollegeState,NorthEasternStates),
+             CollegeState = replace_by(CollegeState,UnionTerritory),
+             CollegeState = as.factor(CollegeState),
+             GraduationYear = as.character(GraduationYear),
+             GraduationYear = replace_by(GraduationYear,"GraduationYear_0","GraduationYear_2013"),
+             GraduationYear = as.factor(GraduationYear)
+      )
+    lm_set <- total_imputed_set_2 %>%
+      mutate(
+        CollegeID = as.character(CollegeID),
+        CollegeID2 = replace_by(CollegeID,college_ID_99999,replaceby = "9999"),
+        CollegeID2 = as.factor(CollegeID2),
+        Degree = as.character(Degree),
+        Degree = ifelse(Degree=="M.Sc. (Tech.)","M.Tech./M.E.",Degree),
+        Degree = as.factor(Degree)
+      )%>%
+      select(-CollegeID)%>%
+      select(-CollegeCityID)
+    
+    state_other <-  as.character(names(
+      which(table(lm_set$CollegeState)<min_state)))
+    lm_set <- lm_set %>%
+      mutate(
+        CollegeState = as.character(CollegeState),
+        CollegeState2 = replace_by(CollegeState,state_other),
+        CollegeState2 = as.factor(CollegeState2)
+      )%>%
+      select(-CollegeState)
+    set.seed(755, sample.kind = "Rounding")
+    test_index <- createDataPartition(lm_set$CollegeID2, times = 1, p = 0.2, 
+                                      list = FALSE)
+    train_set <- lm_set[-test_index,]
+    test_set <- lm_set[test_index,]
+    nrow(test_set)/(nrow(train_set)+nrow(test_set))
+     
+      factor_names <- lm_set %>%
+        select(-where(is.numeric))%>%
+        colnames()
+      removed <- test_set %>% 
+        anti_join(train_set, by = factor_names)
+      nrow(removed)
+      test_set <- test_set %>% 
+        semi_join(train_set, by = factor_names) 
+      train_set <- train_set %>%
+        rbind(removed)
+      n=0
+      while(nrow(test_set)/(nrow(train_set)+nrow(test_set))<0.2 & n<=100){
+      n=n+1  
+      if(n%%10==0)
+      {print(paste("Adjusting test set, test at",round((
+        nrow(test_set)/(nrow(train_set)+nrow(test_set))
+        )*100,digits = 2),"pc"))}
+      
+      set.seed(nrow(removed),sample.kind = "Rounding")
+      
+      readd_index <- sample(nrow(train_set),size = nrow(removed))
+      test_set <- rbind(test_set, train_set[readd_index,])
+      train_set<- train_set[-readd_index,]
+     
+      removed <- test_set %>% 
+        anti_join(train_set, by = factor_names)
+      nrow(removed)
+      test_set <- test_set %>% 
+        semi_join(train_set, by = factor_names) 
+      train_set <- train_set %>%
+        rbind(removed)
+      
+      nrow(test_set)/(nrow(train_set)+nrow(test_set))
+    }
+
+if(nrow(test_set)/(nrow(train_set)+nrow(test_set))>=0.2){
+        lm_obj <- train(Salary~. , 
+                        data=train_set,
+                        method="lm",
+                        trControl = trainControl(method = "repeatedcv", 
+                                                 number = 10, 
+                                                 repeats = 10, 
+                                                 allowParallel = TRUE,
+                                                 savePredictions = TRUE, 
+                                                 verboseIter = FALSE)
+        )
+      
+        predicted_sal_lm = predict(lm_obj , test_set)  
+    res <- rbind(res,data.frame(MinColl= min_coll,
+                                MinState=min_state,
+                                Partition=nrow(test_set)/                             (nrow(train_set)+nrow(test_set)),
+    RMSE=RMSE(predicted_sal_lm,test_set$Salary)))
+} else {print("Minimum test set size not achieved. Skipping")}
+  
+}
+}
+
+res%>% view
+
+res[which.min(res$RMSE),]
+
+plot<-plot_ly(data = res,
+              x=~MinColl,
+              y=~MinState,
+              z=~RMSE,
+              color=~Partition,
+              type="scatter3d",
+              mode="markers")
+plot
+
+```
+
+The above code finds the `min_coll` and `min_state` at 24 and 14. This means that we will not consider as discrete any colleges having less than 24 data points and any states having less than 14. This simplification is necessary to train algorithms. Without this, cross validation will fail often as the test data may contain all of the representation of a college or state and thus the algorithm may not have had a chance to train on the particular instance of the factor.
+
+```{r simplify state and collegeID}
+
+#25 and 9 were chosen by cross validation, code supplied in project
+
+min_coll=25
+min_state=9
+
+ 
+  #Group together very similar states with very low representation
+  #Also take care of stray graduation year = 0, replace by median (2013)
+  
+    NorthEasternStates <- c("Sikkim","Meghalaya","Assam")
+    UnionTerritory <- c("Union Territory","Jammu and Kashmir")
+    
+#Make a list of colleges with under min_coll instances in data
+
+  college_ID_99999 <-  as.character(names(
+     which(table(total_imputed_set$CollegeID)<min_coll)))   
+  
+  #Replace CollegeID with 9999 if they have under min_coll representation
+  #Also take care of stray alternative representation of M.Tech degree.
+  #Also take care of Graduation year = 0 and 2007 in single instances
+
+    lm_set  <- total_imputed_set %>%
+      mutate(CollegeState = as.character(CollegeState),
+             CollegeState = replace_by(CollegeState,c("Maharashtra","Goa"),"Maharashtra & Goa"),
+             CollegeState = replace_by(CollegeState,NorthEasternStates),
+             CollegeState = replace_by(CollegeState,UnionTerritory),
+             CollegeState = as.factor(CollegeState),
+             GraduationYear =ifelse(GraduationYear %in% c(0,2007),2013,GraduationYear),
+             GraduationYear =as.factor(GraduationYear),
+             CollegeID = as.character(CollegeID),
+             CollegeID2 = replace_by(CollegeID,college_ID_99999,replaceby = "9999"),
+             CollegeID2 = as.factor(CollegeID2),
+             Degree = as.character(Degree),
+             Degree = ifelse(Degree=="M.Sc. (Tech.)","M.Tech./M.E.",Degree),
+             Degree = as.factor(Degree)
+      )%>%
+      select(-CollegeID) 
+   
+   #Make a list of states with under min_state instances in data  
+    
+    state_other <-  as.character(names(
+      which(table(lm_set$CollegeState)<min_state)))
+    
+    #Replace CollegeState by "other" in case of low representation
+    
+    lm_set <- lm_set %>%
+      mutate(
+        CollegeState = as.character(CollegeState),
+        CollegeState2 = replace_by(CollegeState,state_other),
+        CollegeState2 = as.factor(CollegeState2)
+      )%>%
+      select(-CollegeState)%>%
+      select(-CollegeCityID) #Copy of college ID, needs to be removed
+    
+    #Set seed and replace
+    
+    set.seed(755, sample.kind = "Rounding")
+    
+
+
+    #We use an 80/20 split in data per standard data science practice
+    test_index <- createDataPartition(lm_set$CollegeID2, times = 1, p = 0.2, 
+                                      list = FALSE)
+    train_set <- lm_set[-test_index,]
+    test_set <- lm_set[test_index,]
+    nrow(test_set)/(nrow(train_set)+nrow(test_set))
+    
+  
+    #To ensure we don't have factors with instances in test_set that don't exist in train_set, 
+    #we perform an antijoin on the factor names
+      factor_names <- lm_set %>%
+        select(-where(is.numeric))%>%
+        colnames()
+      
+      
+      removed <- test_set %>% 
+        anti_join(train_set, by = factor_names)
+      nrow(removed)
+      test_set <- test_set %>% 
+        semi_join(train_set, by = factor_names) 
+      train_set <- train_set %>%
+        rbind(removed)
+      
+      
+      #Since we reduce the test_set, we don't have 20% anymore in it.
+      #The following code readds from the train_set to the test_set until it has at least 20% data
+      
+      n=0 # Iteration var to break out incase of infinite loop
+      
+      while(nrow(test_set)/(nrow(train_set)+nrow(test_set))<0.2 & n<=100){    
+      
+      n=n+1  
+      
+      #To give us an update of the current test set %
+      if(n%%10==0) #to avoid apamming the cosole, we print at every 10th iteration
+      {print(paste("Adjusting test set, test at",round((
+        nrow(test_set)/(nrow(train_set)+nrow(test_set))
+        )*100,digits = 2),"pc"))}
+      
+      
+      #Seed set to number of removed rows to add repeatability while avoiding loss of randomness
+      suppressWarnings(set.seed(nrow(removed) , sample.kind = "Rounding"))
+      
+      #select number of removed rows at random from train set
+      readd_index <- sample(nrow(train_set),size = nrow(removed))
+      
+      #add rows back to test set
+      test_set <- rbind(test_set, train_set[readd_index,])
+      
+      #remove rows from train set
+      train_set<- train_set[-readd_index,]
+   
+      #check for representations with no match in train set
+      removed <- test_set %>% 
+        anti_join(train_set, by = factor_names)
+      nrow(removed)
+      test_set <- test_set %>% 
+        semi_join(train_set, by = factor_names) 
+      train_set <- train_set %>%
+        rbind(removed)
+      
+      #repeat process because we may have removed rows.
+      nrow(test_set)/(nrow(train_set)+nrow(test_set))
+       
+      
+    }
+    
+ #At this point we have the train and test set we will use for all subsequent models.   
+  
+      gc() 
+
+```
+
+The lm code is relatively simple. We use 10 fold cross validation using the `trcontrol` parameter in the caret train model.
+
+```{r lm_model, warning=FALSE}
+
+knitr::opts_chunk$set(cache = TRUE)
+ #Train lm algorithm using caret. lm doesn't need tuning parameters.
+  lm_obj <- lm(Salary~. , data=train_set)
+  lm_obj <- train(Salary~. , 
+                  data=train_set,
+                  method="lm",
+                  trControl = trainControl(method = "repeatedcv", 
+                                                   number = 10, 
+                                                   repeats = 10, 
+                                                   allowParallel = TRUE,
+                                                   savePredictions = TRUE, 
+                                                   verboseIter = FALSE)
+                  )
+  
+  
+  predicted_sal_lm = predict(lm_obj , test_set)
+  #RMSE(predicted_sal_lm,test_set$Salary)
+  RMSE_lm=  RMSE(predicted_sal_lm,test_set$Salary)
+  RMSE_lm
+
+```
+
+## Decision Trees and Random Forest
+
+In the models for which we have tuning parameters available, like those in this section, we will need to find the ideal value for them. A simple way to achieve this is to extend the range on the side in case out best tune is chosen as one of the limits of the tune grid that we supply.
+
+### Decision Trees
+
+Decision tree is a simple machine learning algorithm used for both classification as well as regression. The goal is to create a model that predicts the value of the target variable (here, Salary) by learning simple decision rules inferred from the data. Each feature of the data is split multiple times. Each split is associated with a cost function which the algorithm tries to minimize to try and yield combinations of predictors which give the minimum deviation from the target value of the prediction. Decision trees, when small can be easily represented visually. In our case, the data is too complex to get an intuitive understanding from the tree as you will see in the following unwieldy plot. The rules closer to the root of the tree (on top) are more important. It is thus possible to 'prune' the trees and get rid of more complex rules near the bottom which may be overfitting. However, basic DT is too simplistic to give an accurate prediction so we will not be fine-tuning our DT model here.
+
+```{r Decision Tree}
+
+knitr::opts_chunk$set(cache = TRUE)
+
+set.seed(42)
+fit_dt <- rpart(Salary~.,
+             data = train_set,
+             method = "anova",
+             control = rpart.control(xval = 10, 
+                                     minbucket = 2, 
+                                     cp = 0), 
+             parms = list(split = "information"))
+
+rpart.plot(fit_dt, extra = 100)
+
+predicted_dt <- rpart.predict(fit_dt,
+              newdata = test_set)
+
+RMSE_dt = RMSE(predicted_dt,test_set$Salary)
+RMSE_dt
+
+gc()
+```
+
+### Random Forest
+
+Decision trees are unstable meaning that small changes in the data can result in a completely different tree. To deal with this issue, we use boosting, a way of training and then de-correlating multiple trees in the algorithm RandomForest. The following code implements a random forest from a package of the same name.
+
+```{r RandomForest}
+
+knitr::opts_chunk$set(cache = TRUE)
+set.seed(42)
+
+#There is a function available to find the best value of mtry, 
+#the only tuning parameter available to #us in RandomForest. 
+#mtry is the number of predictors sampled for splitting at each node.
+
+bestmtry <- tuneRF(x=train_set[,-24], #24th column is Salary. These are our predictors
+                   y=train_set[,24], #This is only the Salary, so the predicted var
+                   data = train_set
+                   , stepFactor=1.5, improve=1e-5, ntree=500) %>%
+  as.data.frame()
+
+mtry = bestmtry[which.min(bestmtry$OOBError),1] #Select mtry with lowest out-of-box error (12).
+
+mytuneGrid = expand.grid(mtry=mtry)
+
+model_rf <- train(Salary ~ .,
+                         data = train_set,
+                         method = "rf",
+                         preProcess = c("scale", "center"),
+                         trControl = trainControl(method = "repeatedcv", 
+                                                  number = 5, 
+                                                  repeats = 3, 
+                                                  savePredictions = TRUE, 
+                                                  verboseIter = FALSE),
+                  tuneGrid=mytuneGrid)
+
+importance <- varImp(model_rf, scale = TRUE)
+plot(importance,top = 20)
+
+prediction_rf = predict(model_rf, newdata = test_set)
+RMSE_rf <- RMSE(prediction_rf, test_set$Salary)
+RMSE_rf 
+gc()
+```
+
+We see that RF dramatically improved the RMSE from DT and also that it beat the lm RMSE in prediction, if only by a small margin. The importance plot of the variables tells us exactly which variables contribute to the best Salary. Unsurprisingly, Quant and MeanScale are at the top. Engineers with good quant skills get paid higher. It is also interesting to note that the next two most important variables are performance in 10th and 12th standard, in that order. Hence, students who performed well then can expect to have their efforts rewarded in the future.
+
+### Random Forest XGBoost
+
+No discussion about randomforest is complete without mentioning XGBoost, an algorithm which has had a lot of success in recent machine learning competitions on Kaggle ( an ML resources website). XGBoost stands for "Extreme Gradient Boosting". Random Forest trains multiple trees and aggregates them to create an more stable ensemble model. It does this by a process called bagging (also called bootstrap aggregating) by which it decreases variance (variance is the degree to which these predictions vary between model iterations) and avoids overfitting.
+
+Gradient boosting, unlike bagging algorithms which only control for variance, also controls for bias(bias is how removed a model's predictions are from correctness).
+
+Extreme gradient boosting is an extension to gradient boosted decision trees specifically designed to improve speed and performance, in part by using the capacity of parallel processing available in most modern computers.
+
+```{r xgb_train, message=FALSE, warning=FALSE}
+
+knitr::opts_chunk$set(cache = TRUE)
+
+grid_xgb <- expand.grid(
+  nrounds = c(65,70,80), #number of rounds, tunes to 70
+  max_depth = c(5,6,7), #max depth of tree: tunes to 6, Range [0,Inf]
+  eta = c(0,0.05,0.1,0.15), #step size shrinkage: tunes to 0.05 . Range [0,Inf]
+  gamma = c(0,1), #minimum loss reduction for further partion: tunes to 0. Range [0,Inf] 
+  colsample_bytree = seq(0.3, 0.9, length.out = 5), #subsampling parameters, tunes to 0.5 Range[0,1]
+  min_child_weight = c(0,1), #minimum sum of instance weight needed in a child, tunes to 1.
+  subsample = c(0.4,0.5,0.75,1) #subsampling of instance to control overfitting.Tunes to 0.5 Range(0,1]
+)
+
+set.seed(42)
+model_xgb <- train(Salary ~ .,
+                          data = train_set,
+                          method = "xgbTree",
+                          preProcess = c("scale", "center"),
+                          trControl = trainControl(method = "repeatedcv", 
+                                                   number = 5, 
+                                                   repeats = 3, 
+                                                   allowParallel = TRUE,
+                                                   savePredictions = TRUE, 
+                                                   verboseIter = FALSE),
+                   objective = "reg:squarederror",
+                   tuneGrid = grid_xgb)
+
+
+prediction_xgb = predict(model_xgb, newdata = test_set)
+RMSE_xgb <- RMSE(prediction_xgb, test_set$Salary)
+
+
+RMSE_xgb 
+```
+
+We can observe that XGboost performs well and executes fast doesn't fare as well as RF in the RMSE. At this scale (of 3000 rows), we are better off without sacrificing accuracy for performance.
+
+## Neural Network
+
+Artificial Neural Networks are a family of algorithms inspired from the human brain. Artificial Neural Networks (ANNs in short), in their most common implementation, are made up of stacked layers of 'neurons' with the input layer on the left and output layer on the right(feedforward network). Multiple 'hidden layers' of neurons exist between the input and output layer with adjustable 'weights'. When it is being 'trained', Patterns of input information are fed into the input units and are subsequently multiplied (the operation can be a more complex mathematical function). If the resulting value is greater than a threshold, the neuron transmits the result to the next layer. The thresholds and weights are chosen at random to begin with. This process continues until the output layer which is made up of the expected outputs (in our case, the Salary). The neuron paths which resulted in minimum error are retained and others are adjusted to minimize the error by a feedback process called "backpropagation". Neural networks are computationally very expensive but have been wildly successful for some tasks such as image recognition.
+
+```{r neuralnetwork , warning=FALSE, echo=FALSE, message=FALSE}
+
+knitr::opts_chunk$set(cache = TRUE)
+
+nngrid = expand.grid(.decay=seq(0.02,0.04,0.005), .size=c(13,14,15))
+
+train_params <- trainControl(method = "repeatedcv", 
+                             number = 10, 
+                             repeats=5,
+                             verboseIter = FALSE) 
+set.seed(42)
+model_nn= train(Salary~., 
+          method="nnet",
+          trControl= train_params,
+          data=train_set,
+          preProcess = c('center', 'scale'),
+          na.action = na.omit,
+          linout=TRUE,
+          tuneGrid=nngrid,
+          trace = FALSE
+)
+
+#besttune at size = 14 and decay = 0.03
+```
+
+```{r nn2}
+model_nn$bestTune
+#Best Tune acheived within search range. Model is tuned.
+
+
+
+predicted_salaries = predict(model_nn, newdata=test_set )
+
+RMSE_nn = RMSE(predicted_salaries, test_set$Salary )
+RMSE_nn
+```
+
+We achieve an RMSE of 124 K.
+
+# Results
+
+```{r Results}
+
+
+rmse_results <- rbind(RMSE_lm,RMSE_dt,RMSE_rf,RMSE_xgb,RMSE_nn) %>% 
+  as.data.frame()%>%
+  `colnames<-`("RMSE")%>%
+  mutate(RMSE_by_sd = paste(round(RMSE/sd(lm_set$Salary)*100,1),"%"))
+
+
+kable(rmse_results) %>%
+kable_styling(bootstrap_options = "striped" , full_width = F , position = "center") %>%
+kable_styling(bootstrap_options = "bordered", full_width = F , position ="center") %>%
+column_spec(1,bold = T ) %>%
+column_spec(2,bold =T ,color = "white" , background ="#D7261E")
+
+
+```
+We see that both linear regression and random forest are very succesful in 
+predicting the Salary with RMSEs of around 120 K Rs by year. This amounts to 160 $ by 
+today's exchange rate (Jul 7 2021). I have included the calculation RMSE/sd to
+make it more easy to understand how effectively we were able to predict the
+Salary of these individuals. 
+
+This project has explored the challenges of applying machine learning techniques to raw dirty data. The data had to be standardized (as in the case of various allied engineering disciplines and boards) and then reduced in complexity (with our min_coll and min_state) parameters. We found innovative ways of reducing the NAs by first encoding the information from various tests into one variable and also by imputation for fringe cases. To make our model robust, we also excluded outliers and changed variables like date of birth into other variables such as time_to_graduate which would logically have a greater impact on the salary outcome. For data such as ours, we have found that the RandomForest algorithm gives the best results by bagging different decision trees but also that Linear Regression gives results almost at par in a much shorter time span. We can also conclude that feed-forward neural network with 10 hidden layers is not worth the computational cost.
+
+Our analysis has also resulted in a deeper understanding of the important factors for getting a high salary for aspiring engineering graduates. From the importance plot of our RF model, reproduced here, we can clearly see that Quantitative ability followed by Conscientiousness and English are the decisive elements for higher salaries.
+
+This analysis could be further improved by trying out more of the 233 algorithms that caret implements. We could for instance, use ridge regression to offset the multicollinearity between our variables (conscientiousness, MaxScaledScore, MeanScaledScore etc.). A more elegant way could be found to split the test set and train set so as to include all levels of factors in each. Moreover, we could train the same algorithms while leaving out certain predictors which have the least effect in PCA1 and PCA2 or which appear at the bottom in variable importance plot from RF.
